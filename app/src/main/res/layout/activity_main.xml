@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    tools:context=".MainActivity">
+
+    <EditText
+        android:id="@+id/editTextMinutes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="알람 간격(분)"
+        android:inputType="number"
+        android:ems="4"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/buttonSetAlarm"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:text="알람 설정하기" />
+
+    <!-- 알람 중지 버튼 (초기에 숨김) -->
+    <Button
+        android:id="@+id/buttonStopAlarm"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:text="알람 중지하기"
+        android:visibility="gone"
+        android:layout_marginTop="16dp" />
+
+</LinearLayout>

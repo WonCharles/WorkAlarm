@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- res/values/styles.xml -->
+
+    <style name="Theme.WorkAlarm" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- AppCompat 계열 혹은 Material Components 계열 -->
+
+        <!-- 예: MaterialComponents 를 쓰고 싶다면 -->
+        <!-- parent="Theme.MaterialComponents.DayNight.NoActionBar" -->
+
+        <!-- 여기서 colorPrimary, colorPrimaryDark, colorAccent 등 정의 가능 -->
+        <!-- 기타 UI 속성 -->
+    </style>
+
+</resources>
