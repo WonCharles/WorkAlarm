@@ -1,74 +1,65 @@
 package com.example.workalarm
 
-import android.app.NotificationChannel
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Vibrator
-import android.os.VibrationEffect
-import android.os.Build
+import android.app.AlarmManager
+import android.app.PendingIntent
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat.getSystemService
-import android.app.NotificationManager
-import android.os.VibratorManager
 import androidx.core.content.ContextCompat
+import android.app.NotificationManager
 
 class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        // 1) 진동
-        vibrateDevice(context)
+        // SharedPreferences에서 남은 횟수 가져오기
+        val pref = context.getSharedPreferences(MainActivity.PREF_NAME, Context.MODE_PRIVATE)
+        var remaining = pref.getInt(MainActivity.KEY_REMAINING_COUNT, 0)
 
-        // 2) 알림(Notification) 띄우기
+        if (remaining <= 0) {
+            // 이미 0 이하이면 알람 해제
+            cancelAlarm(context)
+            return
+        }
+
+        // 알림 표시(진동 등 원하는 동작)
         showNotification(context)
-    }
 
-    private fun vibrateDevice(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12(API 31) 이상: VibratorManager
-            val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            val vibrator = vibratorManager.defaultVibrator
+        // 남은 횟수 감소
+        remaining--
+        pref.edit().putInt(MainActivity.KEY_REMAINING_COUNT, remaining).apply()
 
-            // 안드로이드 8.0 이상이면 VibrationEffect 사용
-            val effect = VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE)
-            vibrator.vibrate(effect)
-        } else {
-            // 안드로이드 12 미만: 기존 Vibrator
-            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val effect = VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE)
-                vibrator.vibrate(effect)
-            } else {
-                // 구버전 호환
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(500)
-            }
+        // 0이 되었으면 알람 취소
+        if (remaining <= 0) {
+            cancelAlarm(context)
         }
     }
-
 
     private fun showNotification(context: Context) {
-        // (A) 알림 채널 생성 (오레오 이상)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "alarm_channel_id"
-            val channelName = "Alarm Channel"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-            val channel = NotificationChannel(channelId, channelName, importance)
-            channel.description = "Channel for Alarm"
+        // 임의의 채널 ID
+        val channelId = "alarm_channel_id"
 
-            val nm = ContextCompat.getSystemService(context, NotificationManager::class.java)
-            nm?.createNotificationChannel(channel)
-        }
-        // Notification 빌드
-        val builder = NotificationCompat.Builder(context, "alarm_channel_id")
+        val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("건강 리마인더")
-            .setContentText("지정된 시간이 되었습니다!")
+            .setContentTitle("건강 알람!")
+            .setContentText("스트레칭 시간입니다!")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
 
-        // Notification 표시
-        val notificationManager = getSystemService(context, NotificationManager::class.java)
-        notificationManager?.notify(1001, builder.build())
+        // 알림 매니저
+        val notificationManager = ContextCompat.getSystemService(context, NotificationManager::class.java)
+        notificationManager?.notify(9999, builder.build())
+    }
+
+    private fun cancelAlarm(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, AlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        alarmManager.cancel(pendingIntent)
     }
 }

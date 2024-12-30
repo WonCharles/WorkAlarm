@@ -1,67 +1,104 @@
 package com.example.workalarm
 
 import android.app.AlarmManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
+import android.widget.*
 import android.widget.Toast
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var editTextMinutes: EditText
+    private lateinit var editTextTotalMinutes: EditText
+    private lateinit var editTextInterval: EditText
     private lateinit var buttonSetAlarm: Button
     private lateinit var buttonStopAlarm: Button
+    private lateinit var textViewRemaining: TextView
+
+    companion object {
+        const val PREF_NAME = "alarm_pref"
+        const val KEY_REMAINING_COUNT = "remaining_count"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 레이아웃 요소 연결
-        editTextMinutes = findViewById(R.id.editTextMinutes)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "alarm_channel_id",
+                "Alarm Channel",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Channel for Alarm"
+            }
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+
+
+        editTextTotalMinutes = findViewById(R.id.editTextTotalMinutes)
+        editTextInterval = findViewById(R.id.editTextInterval)
         buttonSetAlarm = findViewById(R.id.buttonSetAlarm)
         buttonStopAlarm = findViewById(R.id.buttonStopAlarm)
+        textViewRemaining = findViewById(R.id.textViewRemaining)
 
-        // 알람 시작(설정) 버튼 클릭
+        // 알람 설정하기
         buttonSetAlarm.setOnClickListener {
-            val minutesStr = editTextMinutes.text.toString()
-            if (minutesStr.isNotEmpty()) {
-                val minutes = minutesStr.toLongOrNull()
-                if (minutes != null && minutes > 0) {
-                    // 실제 알람 설정
-                    setAlarm(minutes)
+            val totalStr = editTextTotalMinutes.text.toString()
+            val intervalStr = editTextInterval.text.toString()
+            val totalMinutes = totalStr.toLongOrNull()
+            val intervalMinutes = intervalStr.toLongOrNull()
 
-                    // UI 전환: 입력창, 시작 버튼 숨기고 -> 중지 버튼 보이기
-                    editTextMinutes.visibility = View.GONE
-                    buttonSetAlarm.visibility = View.GONE
-                    buttonStopAlarm.visibility = View.VISIBLE
-
-                } else {
-                    Toast.makeText(this, "양의 정수를 입력해주세요.", Toast.LENGTH_SHORT).show()
+            if (totalMinutes != null && intervalMinutes != null && totalMinutes > 0 && intervalMinutes > 0) {
+                // 총 반복 횟수: 총시간 / 간격
+                val repeatCount = (totalMinutes / intervalMinutes).toInt()
+                if (repeatCount <= 0) {
+                    Toast.makeText(this, "총 시간 / 간격 결과가 1 이상이어야 합니다.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
                 }
+
+                // 남은 횟수를 SharedPreferences에 저장
+                val pref = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+                pref.edit().putInt(KEY_REMAINING_COUNT, repeatCount).apply()
+
+                // 알람 설정
+                setAlarm(intervalMinutes)
+
+                // UI 전환
+                editTextTotalMinutes.visibility = View.GONE
+                editTextInterval.visibility = View.GONE
+                buttonSetAlarm.visibility = View.GONE
+                buttonStopAlarm.visibility = View.VISIBLE
+                textViewRemaining.text = "총 $repeatCount 회 알람이 남았습니다."
+
             } else {
-                Toast.makeText(this, "시간(분)을 입력하세요.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "양의 정수를 입력해주세요.", Toast.LENGTH_SHORT).show()
             }
         }
 
-        // 알람 중지 버튼 클릭
+        // 알람 중지하기
         buttonStopAlarm.setOnClickListener {
-            // 알람 취소
             stopAlarm()
 
-            // UI 복원: 중지 버튼 숨기고 -> 입력창, 시작 버튼 보이기
-            editTextMinutes.visibility = View.VISIBLE
+            // UI 복원
+            editTextTotalMinutes.visibility = View.VISIBLE
+            editTextInterval.visibility = View.VISIBLE
             buttonSetAlarm.visibility = View.VISIBLE
             buttonStopAlarm.visibility = View.GONE
+            textViewRemaining.text = "남은 횟수: -"
         }
     }
 
-    private fun setAlarm(minutes: Long) {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private fun setAlarm(intervalMinutes: Long) {
+        val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, AlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             this,
@@ -70,19 +107,19 @@ class MainActivity : AppCompatActivity() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // 예: 15분 간격으로 반복
+        val triggerTime = System.currentTimeMillis()
         alarmManager.setRepeating(
             AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis(),
-            minutes * 60 * 1000,
+            triggerTime,
+            intervalMinutes * 60_000,
             pendingIntent
         )
 
-        Toast.makeText(this, "$minutes 분 간격 알람 설정 완료", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "$intervalMinutes 분 간격으로 알람 설정 완료", Toast.LENGTH_SHORT).show()
     }
 
     private fun stopAlarm() {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, AlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             this,
@@ -90,10 +127,12 @@ class MainActivity : AppCompatActivity() {
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-
-        // 알람 취소
         alarmManager.cancel(pendingIntent)
 
-        Toast.makeText(this, "알람이 중지되었습니다.", Toast.LENGTH_SHORT).show()
+        // 남은 횟수 초기화
+        val pref = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+        pref.edit().putInt(KEY_REMAINING_COUNT, 0).apply()
+
+        Toast.makeText(this, "알람 중지됨", Toast.LENGTH_SHORT).show()
     }
 }
