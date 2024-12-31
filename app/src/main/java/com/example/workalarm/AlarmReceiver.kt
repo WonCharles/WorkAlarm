@@ -39,6 +39,7 @@ class AlarmReceiver : BroadcastReceiver() {
         // 4) 만약 0이 되었다면 알람 취소
         if (remaining <= 0) {
             cancelAlarm(context)
+            return
         }
     }
 
