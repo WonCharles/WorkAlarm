@@ -8,28 +8,50 @@
     android:gravity="center"
     tools:context=".MainActivity">
 
+    <!-- 알람 총 시간 (분) 입력 -->
     <EditText
-        android:id="@+id/editTextMinutes"
-        android:layout_width="wrap_content"
+        android:id="@+id/editTextTotalMinutes"
+        android:layout_width="98dp"
         android:layout_height="wrap_content"
-        android:hint="알람 간격(분)"
-        android:inputType="number"
+        android:layout_marginBottom="8dp"
         android:ems="4"
-        android:layout_marginBottom="16dp"/>
+        android:hint="총 시간(분)"
+        android:inputType="number"
+        tools:ignore="TouchTargetSizeCheck" />
 
+    <!-- 알람 간격 (분) 입력 -->
+    <EditText
+        android:id="@+id/editTextInterval"
+        android:layout_width="69dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:ems="4"
+        android:hint="간격(분)"
+        android:inputType="number"
+        android:minHeight="48dp" />
+
+    <!-- 알람 설정(시작) 버튼 -->
     <Button
         android:id="@+id/buttonSetAlarm"
         android:layout_width="wrap_content"
-        android:layout_height="48dp"
+        android:layout_height="wrap_content"
         android:text="알람 설정하기" />
 
-    <!-- 알람 중지 버튼 (초기에 숨김) -->
+    <!-- 알람 중지 버튼 (초기에 GONE) -->
     <Button
         android:id="@+id/buttonStopAlarm"
         android:layout_width="wrap_content"
-        android:layout_height="48dp"
+        android:layout_height="wrap_content"
         android:text="알람 중지하기"
         android:visibility="gone"
+        android:layout_marginTop="16dp" />
+
+    <!-- 남은 횟수 표시 -->
+    <TextView
+        android:id="@+id/textViewRemaining"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="남은 횟수: -"
         android:layout_marginTop="16dp" />
 
 </LinearLayout>
